@@ -1,1 +1,0 @@
-# placeholder for ocr_service
