@@ -51,11 +51,11 @@ def register_institution():
 def approve_institution(inst_id, token):
     print_step("Approving institution")
     res = session.post(
-        f"{BASE_URL}/auth/institutions/{inst_id}/approve",   # ✅ fixed URL (removed duplicate /api)
+        f"{BASE_URL}/auth/institutions/{inst_id}/approve",   # fixed URL (removed duplicate /api)
         headers={"Authorization": f"Bearer {token}"},
         json={"action": "approve"}
     )
-    print("Approval response:", res.status_code, safe_json(res))  # ✅ safe_json
+    print("Approval response:", res.status_code, safe_json(res))  # safe_json
     return res
 
 # ========== MAIN RUN ==========
