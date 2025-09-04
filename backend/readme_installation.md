@@ -75,7 +75,7 @@ curl -X GET http://localhost:5000/api/admin/dashboard \
 
 ## Integration with OCR Team
 
-### When team provides OCR code:
+### When your team provides OCR code:
 
 1. **Replace the mock function** in `api_main.py`:
 ```python
@@ -86,7 +86,7 @@ def mock_ocr_extraction(filepath):
     return their_function(filepath)
 ```
 
-2. **Make sure function returns**:
+2. **Make sure their function returns**:
 ```python
 {
     'certificate_id': 'CERT123',
@@ -146,8 +146,12 @@ GET  /api/institution/template     # Download CSV template
 ## Troubleshooting
 
 ### "Module not found" errors:
-- Your system will still work in basic mode
-- Create the missing .py files from the artifacts I provided
+- Your system will still work in basic mode even if some files are missing
+- You need to create all **4 files** for full features:
+  - `auth_models.py` (database models)
+  - `auth_routes.py` (authentication endpoints)  
+  - `admin_dashboard.py` (admin features)
+  - `institution_portal.py` (institution portal)
 
 ### Database errors:
 - Delete `certificate_system.db` and restart
@@ -163,20 +167,21 @@ GET  /api/institution/template     # Download CSV template
 
 ## Demo Ready Features
 
-For hackathon demo, we'll have:
+For your hackathon demo, you'll have:
 
-1. **Certificate Upload**  - Works now
-2. **Real-time Verification**  - Works with OCR integration  
+1. **Certificate Upload** - Works now
+2. **Real-time Verification** - Works with OCR integration  
 3. **Admin Dashboard** - Fraud detection, analytics
-4. **Institution Portal**  - Bulk uploads, management
-5. **Authentication System**  - Secure access control
-6. **Blacklist Management**  - Block fraudulent certificates
+4. **Institution Portal** - Bulk uploads, management
+5. **Authentication System** - Secure access control
+6. **Blacklist Management** - Block fraudulent certificates
 
-## Next Steps
+## 🔄 Next Steps
 
 1. **Test basic version** - Run `python api_main.py`
 2. **Create additional files** if you want full features  
-3. **Integrate OCR** when team provides it
+3. **Integrate OCR** when your team provides it
 4. **Test with frontend** - All endpoints return JSON
 5. **Deploy for demo** - Everything should work!
 
+Need help with any specific part? Let me know!
