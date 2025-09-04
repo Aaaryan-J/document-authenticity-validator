@@ -69,7 +69,7 @@ class Register(Resource):
             db.session.commit()
             
             # Create access token
-            access_token = create_access_token(identity=user.id)
+            access_token = create_access_token(identity=str(user.id))
             
             return {
                 'message': 'User registered successfully',
@@ -102,7 +102,7 @@ class Login(Resource):
             db.session.commit()
             
             # Create access token
-            access_token = create_access_token(identity=user.id)
+            access_token = create_access_token(identity=str(user.id))
             
             return {
                 'message': 'Login successful',
@@ -120,7 +120,7 @@ class Profile(Resource):
     def get(self):
         """Get current user profile"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user:
@@ -188,7 +188,7 @@ class InstitutionApproval(Resource):
     def post(self, institution_id):
         """Approve institution (admin only)"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
@@ -224,7 +224,7 @@ def require_role(role):
     """Decorator to require specific role"""
     def decorator(f):
         def wrapper(*args, **kwargs):
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != role:
@@ -236,5 +236,5 @@ def require_role(role):
 
 def get_current_user():
     """Get current user from JWT token"""
-    user_id = get_jwt_identity()
+    user_id = int(get_jwt_identity())
     return User.query.get(user_id) if user_id else None

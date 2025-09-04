@@ -30,15 +30,14 @@ class AdminDashboard(Resource):
     def get(self):
         """Get dashboard overview statistics"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
                 return {'error': 'Admin access required'}, 403
             
             # Get date range (default: last 30 days)
-            args = date_range_parser.parse_args()
-            days = args.get('days', 30)
+            days = request.args.get('days', default=30, type=int)
             start_date = datetime.utcnow() - timedelta(days=days)
             
             # Basic counts
@@ -107,14 +106,13 @@ class ForgeryTrends(Resource):
     def get(self):
         """Get forgery trends over time"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
                 return {'error': 'Admin access required'}, 403
             
-            args = date_range_parser.parse_args()
-            days = args.get('days', 30)
+            days = request.args.get('days', default=30, type=int)
             start_date = datetime.utcnow() - timedelta(days=days)
             
             # Daily fraud attempts trend
@@ -198,7 +196,7 @@ class BlacklistManagement(Resource):
     def get(self):
         """Get blacklist entries"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
@@ -245,7 +243,7 @@ class BlacklistManagement(Resource):
     def post(self):
         """Add entry to blacklist"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
@@ -294,7 +292,7 @@ class BlacklistEntry_API(Resource):
     def patch(self, entry_id):
         """Update blacklist entry (activate/deactivate)"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
@@ -329,7 +327,7 @@ class BlacklistEntry_API(Resource):
     def delete(self, entry_id):
         """Delete blacklist entry"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
@@ -354,7 +352,7 @@ class VerificationHistory(Resource):
     def get(self):
         """Get detailed verification history"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
@@ -433,7 +431,7 @@ class AdminStats(Resource):
     def get(self):
         """Get comprehensive system statistics"""
         try:
-            user_id = get_jwt_identity()
+            user_id = int(get_jwt_identity())
             user = User.query.get(user_id)
             
             if not user or user.role != 'admin':
