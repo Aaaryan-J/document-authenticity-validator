@@ -3,8 +3,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Resource, Api, reqparse, marshal_with, abort, fields
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+import jwt
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Import your team's OCR module (they'll provide this)
 # from ocr_module import extract_certificate_data  # Your team will create this
@@ -16,10 +17,13 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///certificates.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+app.config['JWT_SECRET_KEY'] = 'your-jwt-secret-key'  # Change in production
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
 # Initialize extensions
 db = SQLAlchemy(app)
 api = Api(app)
+jwt = jwt.JWTManager(app)
 CORS(app)  # Allow frontend to connect
 
 # Create upload directory
@@ -27,7 +31,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ==================== DATABASE MODELS ====================
 class Certificate(db.Model):
-    """Simple certificate model with the 4 fields"""
+    """Simple certificate model with your 4 fields"""
     id = db.Column(db.Integer, primary_key=True)
     certificate_id = db.Column(db.String(100), unique=True, nullable=False)
     roll_no = db.Column(db.String(80), nullable=False)
@@ -234,8 +238,7 @@ class VerifyUpload(Resource):
 
 class VerificationHistory(Resource):
     """Get verification history for admin dashboard"""
-    #TODO: also return forgery trends and the ability to blacklist offenders 
-
+    
     def get(self):
         """Get all verification attempts"""
         logs = VerificationLog.query.order_by(VerificationLog.created_at.desc()).all()
@@ -292,7 +295,7 @@ def home():
     '''
 
 # ==================== DATABASE INITIALIZATION ====================
-@app.before_request
+@app.before_first_request
 def create_tables():
     db.create_all()
     
