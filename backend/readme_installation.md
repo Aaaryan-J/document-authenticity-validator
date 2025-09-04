@@ -4,7 +4,7 @@
 
 ### 1. Install Dependencies
 ```bash
-pip install flask flask-sqlalchemy flask-restful flask-cors flask-jwt-extended pandas openpyxl xlrd werkzeug
+pip install flask flask-sqlalchemy flask-restful flask-cors flask-jwt-extended pandas openpyxl xlrd werkzeug requests
 ```
 
 ### 2. Run the Basic System
@@ -33,13 +33,7 @@ your-project/
 └── README.md               # This file
 ```
 
-### 2. Create the Additional Files
-
-**auth_routes.py** - Copy the content from the "auth_routes.py" artifact I created
-**admin_dashboard.py** - Copy from the "admin_dashboard.py" artifact  
-**institution_portal.py** - Copy from the "institution_portal.py" artifact
-
-### 3. Test the System
+### 2. Test the System
 
 #### A. Start the server:
 ```bash
@@ -47,6 +41,8 @@ python api_main.py
 ```
 
 #### B. Test authentication:
+
+**Method 1:-**
 ```bash
 # Register a user
 curl -X POST http://localhost:5000/api/auth/register \
@@ -71,6 +67,11 @@ curl -X POST http://localhost:5000/api/verify \
 # Get admin dashboard (login as admin/admin123)
 curl -X GET http://localhost:5000/api/admin/dashboard \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
+```
+
+**Method 2():-**
+```bash
+python test_api.py
 ```
 
 ## Integration with OCR Team
@@ -167,7 +168,7 @@ GET  /api/institution/template     # Download CSV template
 
 ## Demo Ready Features
 
-For your hackathon demo, you'll have:
+For the hackathon demo:
 
 1. **Certificate Upload** - Works now
 2. **Real-time Verification** - Works with OCR integration  
@@ -176,12 +177,10 @@ For your hackathon demo, you'll have:
 5. **Authentication System** - Secure access control
 6. **Blacklist Management** - Block fraudulent certificates
 
-## 🔄 Next Steps
+## Next Steps
 
 1. **Test basic version** - Run `python api_main.py`
 2. **Create additional files** if you want full features  
-3. **Integrate OCR** when your team provides it
+3. **Integrate OCR** when the team provides it
 4. **Test with frontend** - All endpoints return JSON
 5. **Deploy for demo** - Everything should work!
-
-Need help with any specific part? Let me know!
