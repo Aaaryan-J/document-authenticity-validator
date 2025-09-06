@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Verification System - Frontend</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .hidden { display: none; }
+        .section { margin-top: 20px; }
+        .navbar-brand { font-weight: bold; }
+        .table-container { max-height: 400px; overflow-y: auto; }
+        .loading { color: #007bff; font-style: italic; }
+        .error { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">Certificate Verification System</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <button id="logout-btn" class="btn btn-danger hidden">Logout</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Login/Register Section -->
+        <div id="auth-section">
+            <ul class="nav nav-tabs" id="authTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab">Login</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab">Register</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="institution-register-tab" data-bs-toggle="tab" data-bs-target="#institution-register" type="button" role="tab">Register Institution</button>
+                </li>
+            </ul>
+            <div class="tab-content" id="authTabContent">
+                <!-- Login Form -->
+                <div class="tab-pane fade show active" id="login" role="tabpanel">
+                    <form id="login-form" class="section">
+                        <div class="mb-3">
+                            <label for="login-username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="login-username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="login-password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="login-password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </form>
+                </div>
+                <!-- Register Form -->
+                <div class="tab-pane fade" id="register" role="tabpanel">
+                    <form id="register-form" class="section">
+                        <div class="mb-3">
+                            <label for="reg-username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="reg-username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reg-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="reg-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reg-password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="reg-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="reg-role" class="form-label">Role</label>
+                            <select class="form-select" id="reg-role">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                                <option value="institution">Institution</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 hidden" id="reg-inst-code-div">
+                            <label for="reg-institution-code" class="form-label">Institution Code</label>
+                            <input type="text" class="form-control" id="reg-institution-code">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Register</button>
+                    </form>
+                </div>
+                <!-- Institution Register Form -->
+                <div class="tab-pane fade" id="institution-register" role="tabpanel">
+                    <form id="institution-register-form" class="section">
+                        <div class="mb-3">
+                            <label for="inst-name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="inst-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="inst-code" class="form-label">Code</label>
+                            <input type="text" class="form-control" id="inst-code" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="inst-address" class="form-label">Address</label>
+                            <input type="text" class="form-control" id="inst-address">
+                        </div>
+                        <div class="mb-3">
+                            <label for="inst-email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="inst-email">
+                        </div>
+                        <div class="mb-3">
+                            <label for="inst-phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="inst-phone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="inst-website" class="form-label">Website</label>
+                            <input type="text" class="form-control" id="inst-website">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Register Institution</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Profile -->
+        <div id="profile-section" class="section hidden">
+            <h2>Profile</h2>
+            <pre id="profile-data"></pre>
+        </div>
+
+        <!-- Admin Dashboard Section -->
+        <div id="admin-section" class="section hidden">
+            <h2>Admin Dashboard</h2>
+            <button id="admin-dashboard-btn" class="btn btn-info">Load Dashboard</button>
+            <pre id="admin-dashboard-data"></pre>
+
+            <h3>Institution Approval</h3>
+            <button id="admin-institutions-btn" class="btn btn-info">Load Pending Institutions</button>
+            <div id="institutions-status" class="mt-2"></div>
+            <div class="table-container mt-3">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Code</th>
+                            <th>Email</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="institutions-table-body"></tbody>
+                </table>
+            </div>
+
+            <h3>Forgery Trends</h3>
+            <button id="admin-trends-btn" class="btn btn-info">Load Trends</button>
+            <pre id="admin-trends-data"></pre>
+
+            <h3>Blacklist Management</h3>
+            <form id="add-blacklist-form">
+                <div class="mb-3">
+                    <label for="bl-certificate-id" class="form-label">Certificate ID</label>
+                    <input type="text" class="form-control" id="bl-certificate-id">
+                </div>
+                <div class="mb-3">
+                    <label for="bl-name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="bl-name">
+                </div>
+                <div class="mb-3">
+                    <label for="bl-roll-no" class="form-label">Roll No</label>
+                    <input type="text" class="form-control" id="bl-roll-no">
+                </div>
+                <div class="mb-3">
+                    <label for="bl-institution-name" class="form-label">Institution Name</label>
+                    <input type="text" class="form-control" id="bl-institution-name">
+                </div>
+                <div class="mb-3">
+                    <label for="bl-reason" class="form-label">Reason</label>
+                    <input type="text" class="form-control" id="bl-reason" required>
+                </div>
+                <div class="mb-3">
+                    <label for="bl-fraud-type" class="form-label">Fraud Type</label>
+                    <input type="text" class="form-control" id="bl-fraud-type" required>
+                </div>
+                <div class="mb-3">
+                    <label for="bl-severity" class="form-label">Severity</label>
+                    <select class="form-select" id="bl-severity">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="bl-evidence" class="form-label">Evidence</label>
+                    <input type="text" class="form-control" id="bl-evidence">
+                </div>
+                <button type="submit" class="btn btn-warning">Add to Blacklist</button>
+            </form>
+            <button id="admin-blacklist-btn" class="btn btn-info mt-3">Load Blacklist</button>
+            <pre id="admin-blacklist-data"></pre>
+
+            <h3>Verification History</h3>
+            <button id="admin-history-btn" class="btn btn-info">Load History</button>
+            <pre id="admin-history-data"></pre>
+
+            <h3>Admin Stats</h3>
+            <button id="admin-stats-btn" class="btn btn-info">Load Stats</button>
+            <pre id="admin-stats-data"></pre>
+        </div>
+
+        <!-- Institution Portal Section -->
+        <div id="institution-section" class="section hidden">
+            <h2>Institution Dashboard</h2>
+            <button id="inst-dashboard-btn" class="btn btn-info">Load Dashboard</button>
+            <pre id="inst-dashboard-data"></pre>
+
+            <h3>Single Certificate Upload</h3>
+            <form id="single-upload-form">
+                <div class="mb-3">
+                    <label for="su-certificate-id" class="form-label">Certificate ID</label>
+                    <input type="text" class="form-control" id="su-certificate-id" required>
+                </div>
+                <div class="mb-3">
+                    <label for="su-name" class="form-label">Name</label>
+                    <input type="text" class="form-control" id="su-name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="su-roll-no" class="form-label">Roll No</label>
+                    <input type="text" class="form-control" id="su-roll-no" required>
+                </div>
+                <div class="mb-3">
+                    <label for="su-marks" class="form-label">Marks</label>
+                    <input type="number" class="form-control" id="su-marks" required>
+                </div>
+                <div class="mb-3">
+                    <label for="su-course" class="form-label">Course</label>
+                    <input type="text" class="form-control" id="su-course">
+                </div>
+                <div class="mb-3">
+                    <label for="su-graduation-date" class="form-label">Graduation Date (YYYY-MM-DD)</label>
+                    <input type="text" class="form-control" id="su-graduation-date">
+                </div>
+                <button type="submit" class="btn btn-primary">Upload Single Certificate</button>
+            </form>
+
+            <h3>Bulk Certificate Upload</h3>
+            <form id="bulk-upload-form">
+                <div class="mb-3">
+                    <label for="bulk-file" class="form-label">CSV/Excel File</label>
+                    <input type="file" class="form-control" id="bulk-file" accept=".csv,.xlsx,.xls" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload Bulk</button>
+            </form>
+
+            <h3>Certificates List</h3>
+            <button id="inst-certificates-btn" class="btn btn-info">Load Certificates</button>
+            <pre id="inst-certificates-data"></pre>
+
+            <h3>Upload History</h3>
+            <button id="inst-history-btn" class="btn btn-info">Load Upload History</button>
+            <pre id="inst-history-data"></pre>
+
+            <h3>Download Template</h3>
+            <button id="inst-template-btn" class="btn btn-info">Download Template</button>
+            <pre id="inst-template-data"></pre>
+        </div>
+
+        <!-- General Messages -->
+        <div id="message" class="alert alert-info mt-3 hidden"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:5000/api';
+        let token = localStorage.getItem('token');
+
+        // Helper Functions
+        function showMessage(msg, type = 'info') {
+            const messageEl = document.getElementById('message');
+            messageEl.className = `alert alert-${type}`;
+            messageEl.textContent = msg;
+            messageEl.classList.remove('hidden');
+            setTimeout(() => messageEl.classList.add('hidden'), 5000);
+        }
+
+        function handleError(err, elementId = 'message') {
+            const messageEl = document.getElementById(elementId);
+            messageEl.className = `alert alert-danger ${elementId === 'institutions-status' ? 'error' : ''}`;
+            messageEl.textContent = 'Error: ' + (err.message || 'Unknown error');
+            messageEl.classList.remove('hidden');
+            console.error(err);
+            if (elementId === 'institutions-status') {
+                setTimeout(() => messageEl.classList.add('hidden'), 5000);
+            }
+        }
+
+        function setAuthHeader() {
+            return token ? { 'Authorization': `Bearer ${token}` } : {};
+        }
+
+        function showSection(sectionId) {
+            ['auth-section', 'profile-section', 'admin-section', 'institution-section'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+            document.getElementById('logout-btn').classList.toggle('hidden', sectionId === 'auth-section');
+        }
+
+        function loadProfile() {
+            fetch(`${API_BASE}/auth/profile`, {
+                headers: { ...setAuthHeader(), 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                document.getElementById('profile-data').textContent = JSON.stringify(data, null, 2);
+                const role = data.user.role;
+                if (role === 'admin') {
+                    showSection('admin-section');
+                } else if (role === 'institution') {
+                    showSection('institution-section');
+                } else {
+                    showSection('profile-section');
+                }
+            })
+            .catch(err => handleError(err));
+        }
+
+        // Load Pending Institutions
+        function loadPendingInstitutions() {
+            const tbody = document.getElementById('institutions-table-body');
+            const statusEl = document.getElementById('institutions-status');
+            tbody.innerHTML = '';
+            statusEl.className = 'loading';
+            statusEl.textContent = 'Loading institutions...';
+            statusEl.classList.remove('hidden');
+
+            fetch(`${API_BASE}/auth/institutions`, { headers: setAuthHeader() })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                return res.json();
+            })
+            .then(data => {
+                statusEl.classList.add('hidden');
+                if (data.error) throw new Error(data.error);
+                console.log('Full response:', data); // Log full response
+                const institutions = data.institutions || data.data?.institutions || []; // Handle nested or alternative keys
+                console.log('Filtered institutions:', institutions.filter(inst => !inst.is_verified && inst.is_active));
+                const pending = institutions.filter(inst => {
+                    return !inst.is_verified && inst.is_active !== false; // Handle case where is_active might be null or undefined
+                });
+                if (pending.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4">No pending institutions</td></tr>';
+                    return;
+                }
+                pending.forEach(inst => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${inst.name || '-'}</td>
+                        <td>${inst.code || '-'}</td>
+                        <td>${inst.email || '-'}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm approve-btn" data-id="${inst.id}">Approve</button>
+                            <button class="btn btn-danger btn-sm reject-btn" data-id="${inst.id}">Reject</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                document.querySelectorAll('.approve-btn').forEach(btn => {
+                    btn.addEventListener('click', () => approveInstitution(btn.dataset.id, 'approve'));
+                });
+                document.querySelectorAll('.reject-btn').forEach(btn => {
+                    btn.addEventListener('click', () => approveInstitution(btn.dataset.id, 'reject'));
+                });
+            })
+            .catch(err => {
+                statusEl.classList.add('hidden');
+                handleError(err, 'institutions-status');
+            });
+        }
+
+        function approveInstitution(institutionId, action) {
+            const statusEl = document.getElementById('institutions-status');
+            statusEl.className = 'loading';
+            statusEl.textContent = `Processing ${action} for institution ${institutionId}...`;
+            statusEl.classList.remove('hidden');
+
+            fetch(`${API_BASE}/auth/institutions/${institutionId}/approve`, {
+                method: 'POST',
+                headers: { ...setAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            })
+            .then(res => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                return res.json();
+            })
+            .then(data => {
+                statusEl.classList.add('hidden');
+                if (data.error) throw new Error(data.error);
+                showMessage(data.message);
+                loadPendingInstitutions();
+            })
+            .catch(err => {
+                statusEl.classList.add('hidden');
+                handleError(err, 'institutions-status');
+            });
+        }
+
+        // Event Listeners
+        document.getElementById('login-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            fetch(`${API_BASE}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                token = data.access_token;
+                localStorage.setItem('token', token);
+                showMessage('Login successful');
+                loadProfile();
+            })
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('register-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+            const institution_code = document.getElementById('reg-institution-code').value;
+            const body = { username, email, password, role };
+            if (role === 'institution') body.institution_code = institution_code;
+            fetch(`${API_BASE}/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                showMessage('Registration successful. Please login.');
+            })
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('reg-role').addEventListener('change', e => {
+            document.getElementById('reg-inst-code-div').classList.toggle('hidden', e.target.value !== 'institution');
+        });
+
+        document.getElementById('institution-register-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const body = {
+                name: document.getElementById('inst-name').value,
+                code: document.getElementById('inst-code').value,
+                address: document.getElementById('inst-address').value,
+                email: document.getElementById('inst-email').value,
+                phone: document.getElementById('inst-phone').value,
+                website: document.getElementById('inst-website').value
+            };
+            fetch(`${API_BASE}/auth/institution/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                showMessage('Institution registered. Waiting for approval.');
+            })
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('token');
+            token = null;
+            showSection('auth-section');
+            showMessage('Logged out');
+        });
+
+        // Admin Section
+        document.getElementById('admin-dashboard-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/admin/dashboard`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('admin-dashboard-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('admin-institutions-btn').addEventListener('click', () => {
+            loadPendingInstitutions();
+        });
+
+        document.getElementById('admin-trends-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/admin/trends`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('admin-trends-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('add-blacklist-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const body = {
+                certificate_id: document.getElementById('bl-certificate-id').value,
+                name: document.getElementById('bl-name').value,
+                roll_no: document.getElementById('bl-roll-no').value,
+                institution_name: document.getElementById('bl-institution-name').value,
+                reason: document.getElementById('bl-reason').value,
+                fraud_type: document.getElementById('bl-fraud-type').value,
+                severity: document.getElementById('bl-severity').value,
+                evidence: document.getElementById('bl-evidence').value
+            };
+            fetch(`${API_BASE}/admin/blacklist`, {
+                method: 'POST',
+                headers: { ...setAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                showMessage('Added to blacklist');
+            })
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('admin-blacklist-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/admin/blacklist`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('admin-blacklist-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('admin-history-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/admin/history`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('admin-history-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('admin-stats-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/admin/stats`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('admin-stats-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        // Institution Section
+        document.getElementById('inst-dashboard-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/institution/dashboard`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('inst-dashboard-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('single-upload-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const body = {
+                certificate_id: document.getElementById('su-certificate-id').value,
+                name: document.getElementById('su-name').value,
+                roll_no: document.getElementById('su-roll-no').value,
+                marks: parseInt(document.getElementById('su-marks').value),
+                course: document.getElementById('su-course').value,
+                graduation_date: document.getElementById('su-graduation-date').value
+            };
+            fetch(`${API_BASE}/institution/upload/single`, {
+                method: 'POST',
+                headers: { ...setAuthHeader(), 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                showMessage('Single upload successful');
+            })
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('bulk-upload-form').addEventListener('submit', e => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('bulk-file').files[0]);
+            fetch(`${API_BASE}/institution/upload/bulk`, {
+                method: 'POST',
+                headers: setAuthHeader(),
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                showMessage('Bulk upload successful');
+            })
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('inst-certificates-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/institution/certificates`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('inst-certificates-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('inst-history-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/institution/uploads/history`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => document.getElementById('inst-history-data').textContent = JSON.stringify(data, null, 2))
+            .catch(err => handleError(err));
+        });
+
+        document.getElementById('inst-template-btn').addEventListener('click', () => {
+            fetch(`${API_BASE}/institution/template`, { headers: setAuthHeader() })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) throw new Error(data.error);
+                document.getElementById('inst-template-data').textContent = JSON.stringify(data, null, 2);
+                if (data.template_url) {
+                    window.open(`${API_BASE}${data.template_url}`, '_blank');
+                }
+            })
+            .catch(err => handleError(err));
+        });
+
+        // Initial Load
+        if (token) {
+            loadProfile();
+        } else {
+            showSection('auth-section');
+        }
+    </script>
+</body>
+</html>
