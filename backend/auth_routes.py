@@ -3,14 +3,22 @@ from flask_restful import Resource, reqparse
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from auth_models import User, Institution, db
 from datetime import datetime
+import os
 
 # ==================== REQUEST PARSERS ====================
 register_parser = reqparse.RequestParser()
 register_parser.add_argument('username', type=str, required=True, help="Username required")
 register_parser.add_argument('email', type=str, required=True, help="Email required")
 register_parser.add_argument('password', type=str, required=True, help="Password required")
-register_parser.add_argument('role', type=str, required=False, default='user', help="Role: user, admin, institution")
+register_parser.add_argument('role', type=str, required=False, default='user', help="Role: user, institution")
 register_parser.add_argument('institution_code', type=str, required=False, help="Institution code (if role=institution)")
+
+# Admin registration parser (separate and more restrictive)
+admin_register_parser = reqparse.RequestParser()
+admin_register_parser.add_argument('username', type=str, required=True, help="Username required")
+admin_register_parser.add_argument('email', type=str, required=True, help="Email required")
+admin_register_parser.add_argument('password', type=str, required=True, help="Password required")
+admin_register_parser.add_argument('admin_secret_key', type=str, required=True, help="Admin secret key required")
 
 login_parser = reqparse.RequestParser()
 login_parser.add_argument('username', type=str, required=True, help="Username required")
@@ -24,14 +32,22 @@ institution_parser.add_argument('email', type=str, required=False, help="Email")
 institution_parser.add_argument('phone', type=str, required=False, help="Phone")
 institution_parser.add_argument('website', type=str, required=False, help="Website")
 
+# ==================== SECURITY CONFIG ====================
+# Set this in your environment variables or config
+ADMIN_SECRET_KEY = os.environ.get('ADMIN_SECRET_KEY', 'your-super-secret-admin-key-change-this')
+
 # ==================== AUTHENTICATION ENDPOINTS ====================
 class Register(Resource):
-    """User registration endpoint"""
+    """User registration endpoint - SECURE VERSION"""
     
     def post(self):
-        """Register new user"""
+        """Register new user (NO ADMIN REGISTRATION ALLOWED)"""
         try:
             args = register_parser.parse_args()
+            
+            # SECURITY: Block admin registration through this endpoint
+            if args['role'] == 'admin':
+                return {'error': 'Admin registration not allowed through this endpoint. Use /api/auth/register-admin'}, 403
             
             # Check if username already exists
             if User.query.filter_by(username=args['username']).first():
@@ -41,10 +57,10 @@ class Register(Resource):
             if User.query.filter_by(email=args['email']).first():
                 return {'error': 'Email already registered'}, 400
             
-            # Validate role
-            valid_roles = ['user', 'admin', 'institution']
+            # Validate role - only user and institution allowed
+            valid_roles = ['user', 'institution']
             if args['role'] not in valid_roles:
-                return {'error': 'Invalid role'}, 400
+                return {'error': 'Invalid role. Only "user" and "institution" allowed'}, 400
             
             # For institution users, verify institution code
             institution_id = None
@@ -79,6 +95,97 @@ class Register(Resource):
             
         except Exception as e:
             return {'error': f'Registration failed: {str(e)}'}, 500
+
+class AdminRegister(Resource):
+    """SECURE Admin registration endpoint"""
+    
+    def post(self):
+        """Register new admin user with secret key verification"""
+        try:
+            args = admin_register_parser.parse_args()
+            
+            # SECURITY: Verify admin secret key
+            if args['admin_secret_key'] != ADMIN_SECRET_KEY:
+                return {'error': 'Invalid admin secret key'}, 403
+            
+            # Check if username already exists
+            if User.query.filter_by(username=args['username']).first():
+                return {'error': 'Username already exists'}, 400
+            
+            # Check if email already exists
+            if User.query.filter_by(email=args['email']).first():
+                return {'error': 'Email already registered'}, 400
+            
+            # Create new admin user
+            user = User(
+                username=args['username'],
+                email=args['email'],
+                role='admin'
+            )
+            user.set_password(args['password'])
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            # Create access token
+            access_token = create_access_token(identity=str(user.id))
+            
+            return {
+                'message': 'Admin user registered successfully',
+                'access_token': access_token,
+                'user': user.to_dict()
+            }, 201
+            
+        except Exception as e:
+            return {'error': f'Admin registration failed: {str(e)}'}, 500
+
+class CreateFirstAdmin(Resource):
+    """Create first admin user - only works if no admins exist"""
+    
+    def post(self):
+        """Create first admin user (emergency bootstrap)"""
+        try:
+            # SECURITY: Only allow if no admin users exist
+            existing_admins = User.query.filter_by(role='admin').count()
+            if existing_admins > 0:
+                return {'error': 'Admin users already exist. Use /api/auth/register-admin instead'}, 403
+            
+            args = admin_register_parser.parse_args()
+            
+            # Still require secret key even for first admin
+            if args['admin_secret_key'] != ADMIN_SECRET_KEY:
+                return {'error': 'Invalid admin secret key'}, 403
+            
+            # Check if username already exists
+            if User.query.filter_by(username=args['username']).first():
+                return {'error': 'Username already exists'}, 400
+            
+            # Check if email already exists
+            if User.query.filter_by(email=args['email']).first():
+                return {'error': 'Email already registered'}, 400
+            
+            # Create first admin user
+            user = User(
+                username=args['username'],
+                email=args['email'],
+                role='admin'
+            )
+            user.set_password(args['password'])
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            # Create access token
+            access_token = create_access_token(identity=str(user.id))
+            
+            return {
+                'message': 'First admin user created successfully',
+                'access_token': access_token,
+                'user': user.to_dict()
+            }, 201
+            
+        except Exception as e:
+            return {'error': f'First admin creation failed: {str(e)}'}, 500
 
 class Login(Resource):
     """User login endpoint"""
@@ -130,6 +237,41 @@ class Profile(Resource):
             
         except Exception as e:
             return {'error': f'Failed to get profile: {str(e)}'}, 500
+
+class PromoteToAdmin(Resource):
+    """Promote existing user to admin - ADMIN ONLY"""
+    
+    @jwt_required()
+    def post(self, user_id):
+        """Promote user to admin role (existing admin required)"""
+        try:
+            current_user_id = int(get_jwt_identity())
+            current_user = User.query.get(current_user_id)
+            
+            # SECURITY: Only existing admins can promote others
+            if not current_user or current_user.role != 'admin':
+                return {'error': 'Admin access required'}, 403
+            
+            target_user = User.query.get(user_id)
+            if not target_user:
+                return {'error': 'User not found'}, 404
+            
+            if target_user.role == 'admin':
+                return {'error': 'User is already an admin'}, 400
+            
+            # Promote to admin
+            target_user.role = 'admin'
+            target_user.institution_id = None  # Admins shouldn't be tied to institutions
+            
+            db.session.commit()
+            
+            return {
+                'message': f'User {target_user.username} promoted to admin successfully',
+                'user': target_user.to_dict()
+            }, 200
+            
+        except Exception as e:
+            return {'error': f'Admin promotion failed: {str(e)}'}, 500
 
 # ==================== INSTITUTION MANAGEMENT ====================
 class InstitutionRegister(Resource):
