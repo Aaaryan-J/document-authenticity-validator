@@ -34,7 +34,7 @@ institution_parser.add_argument('website', type=str, required=False, help="Websi
 
 # ==================== SECURITY CONFIG ====================
 # Set this in your environment variables or config
-ADMIN_SECRET_KEY = os.environ.get('ADMIN_SECRET_KEY', '10ec65115adc9c31a22bd580e67592e3')
+ADMIN_SECRET_KEY = os.environ.get('ADMIN_SECRET_KEY')
 
 # ==================== AUTHENTICATION ENDPOINTS ====================
 class Register(Resource):
