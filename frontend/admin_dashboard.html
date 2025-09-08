@@ -1,0 +1,63 @@
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+ <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<style>
+  body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f5f7;
+            color: #333;}
+.topnav a {
+  float: left;
+  color: #249c64;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;}
+</style>
+</head>
+<body>
+   <nav class="flex items-center justify-between bg-white shadow-lg rounded-xl p-4 mb-8">
+<div class="topnav">
+  <a class="name_1">Admin dashboard</a>
+  <a class="a" href="#">Home</a>
+  <a href="#">Contact</a>
+  <a href="#">About</a>
+  <a class="name">Admin name</a>
+   <a href="#">Logout</a>
+</div>
+</nav>
+<section id="overview" class="mb-8">
+        <h2 class="text-2xl font-semibold text-gray-700 mb-4">Overview</h2>
+        <div id="stats-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        </div>
+    </section>
+
+<canvas id="myChart" style="max-width:600px;"></canvas>
+
+<script>
+const xValues = ["Italy", "France", "Spain", "USA", "Argentina"];
+const yValues = [55, 49, 44, 24, 15];
+const barColors = ["red", "green","blue","orange","brown"];
+
+new Chart("myChart", {
+  type: "bar",
+  data: {
+    labels: xValues,
+    datasets: [{
+      backgroundColor: barColors,
+      data: yValues
+    }]
+  },
+  options: {
+    legend: {display: false},
+    title: {
+      display: true,
+      text: "World Wine Production 2018"
+    }
+  }
+});
+</script>
+</body>
+</html>

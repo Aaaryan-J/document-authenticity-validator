@@ -1,0 +1,46 @@
+<html>
+    <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+        div.box{
+  border: 15px;
+  padding: 50px;
+  margin: 100px 100px 75px 100px;}
+
+        button {
+  background-color: #04AA6D;
+  color: white;
+  padding: 5px 10px;
+  margin: 8px 0;
+  border: none;
+  cursor: pointer;
+  width: 10%;
+}
+.select{ margin-top: 20px; }
+h2{
+text-align:center;}
+        </style>
+    </head>
+    <body>
+        <div class="box">
+        <h2>Registration</h2>
+        <form><center>
+            <div class="container">
+                <label for="ename"><p class="a">Email id</p></label>
+      <input type="text" placeholder="Enter email id" name="ename" required>
+                <label for="uname"><p class="b">Username</p></label>
+      <input type="text" placeholder="Enter Username" name="uname" required>
+      <label for="pwd"><p class="c">Password</p></label>
+      <input type="text" placeholder="Enter password" name="ename" required>
+      <br>
+       <label class="form-label">Role</label>
+                            <select class="form-select" id="reg-role">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                                <option value="institution">Institution</option></select>
+        <br><button type="submit">Register</button><br>
+    </div>
+</center> </form>
+</div>
+    </body>
+</html>
