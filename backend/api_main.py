@@ -9,7 +9,10 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Import routes
+# Import shared db + models FIRST
+from auth_models import db
+
+# Import routes AFTER db
 from auth_routes import (
     Register, Login, Profile, InstitutionRegister, InstitutionList, InstitutionApproval,
     AdminRegister, CreateFirstAdmin, PromoteToAdmin
@@ -24,24 +27,28 @@ from institution_portal import (
     InstitutionCertificates, BulkUploadHistory, DownloadTemplate
 )
 
-# Import shared db + models
-from auth_models import db, User, Institution, Certificate, VerificationLog
-
 app = Flask(__name__)
 
 # ==================== CONFIG ====================
+# Use absolute path to your existing certificates.db
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///certificates.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+}
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', 'fallback-key-change-this')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
 # ==================== EXTENSIONS ====================  
+# Initialize db with app BEFORE creating API
+db.init_app(app)
+
 api = Api(app)
 jwt = JWTManager(app)
 CORS(app)
-db.init_app(app)
 
 # Create upload directories
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -98,9 +105,23 @@ def home():
     </ul>
     '''
 
-# ==================== INIT DB ====================
-with app.app_context():
-    db.create_all()
+# ==================== DATABASE CONNECTION TEST ====================
+@app.route('/api/test/db')
+def test_db():
+    """Test database connection"""
+    try:
+        from auth_models import User
+        count = User.query.count()
+        return {
+            'status': 'success',
+            'message': 'Database connection successful',
+            'user_count': count
+        }
+    except Exception as e:
+        return {
+            'status': 'error',
+            'message': f'Database connection failed: {str(e)}'
+        }, 500
 
 if __name__ == '__main__':
     # Security check
@@ -109,6 +130,7 @@ if __name__ == '__main__':
     if not os.environ.get('JWT_SECRET_KEY'):
         print("WARNING: JWT_SECRET_KEY not set! Using fallback key (not secure).")
     
-    with app.app_context():
-        db.create_all()
+    # Don't create tables - use existing database
+    print("Using existing certificates.db database")
+    
     app.run(debug=True, host='0.0.0.0', port=5000)

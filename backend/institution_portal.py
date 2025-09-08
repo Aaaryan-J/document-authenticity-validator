@@ -284,7 +284,6 @@ class SingleCertificateUpload(Resource):
                 roll_no=args['roll_no'],
                 marks=args['marks'],
                 institution_id=user.institution_id,
-                course=args.get('course'),
                 graduation_date=graduation_date,
                 is_verified=True,
                 added_by=user_id

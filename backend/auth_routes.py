@@ -81,19 +81,26 @@ class Register(Resource):
             )
             user.set_password(args['password'])
             
-            db.session.add(user)
-            db.session.commit()
-            
-            # Create access token
-            access_token = create_access_token(identity=str(user.id))
-            
-            return {
-                'message': 'User registered successfully',
-                'access_token': access_token,
-                'user': user.to_dict()
-            }, 201
+            # Proper database session handling
+            try:
+                db.session.add(user)
+                db.session.commit()
+                
+                # Create access token
+                access_token = create_access_token(identity=str(user.id))
+                
+                return {
+                    'message': 'User registered successfully',
+                    'access_token': access_token,
+                    'user': user.to_dict()
+                }, 201
+                
+            except Exception as e:
+                db.session.rollback()
+                return {'error': f'Database error: {str(e)}'}, 500
             
         except Exception as e:
+            db.session.rollback()
             return {'error': f'Registration failed: {str(e)}'}, 500
 
 class AdminRegister(Resource):
@@ -105,7 +112,7 @@ class AdminRegister(Resource):
             args = admin_register_parser.parse_args()
             
             # SECURITY: Verify admin secret key
-            if args['admin_secret_key'] != ADMIN_SECRET_KEY:
+            if not ADMIN_SECRET_KEY or args['admin_secret_key'] != ADMIN_SECRET_KEY:
                 return {'error': 'Invalid admin secret key'}, 403
             
             # Check if username already exists
@@ -124,19 +131,25 @@ class AdminRegister(Resource):
             )
             user.set_password(args['password'])
             
-            db.session.add(user)
-            db.session.commit()
-            
-            # Create access token
-            access_token = create_access_token(identity=str(user.id))
-            
-            return {
-                'message': 'Admin user registered successfully',
-                'access_token': access_token,
-                'user': user.to_dict()
-            }, 201
+            try:
+                db.session.add(user)
+                db.session.commit()
+                
+                # Create access token
+                access_token = create_access_token(identity=str(user.id))
+                
+                return {
+                    'message': 'Admin user registered successfully',
+                    'access_token': access_token,
+                    'user': user.to_dict()
+                }, 201
+                
+            except Exception as e:
+                db.session.rollback()
+                return {'error': f'Database error: {str(e)}'}, 500
             
         except Exception as e:
+            db.session.rollback()
             return {'error': f'Admin registration failed: {str(e)}'}, 500
 
 class CreateFirstAdmin(Resource):
@@ -153,7 +166,7 @@ class CreateFirstAdmin(Resource):
             args = admin_register_parser.parse_args()
             
             # Still require secret key even for first admin
-            if args['admin_secret_key'] != ADMIN_SECRET_KEY:
+            if not ADMIN_SECRET_KEY or args['admin_secret_key'] != ADMIN_SECRET_KEY:
                 return {'error': 'Invalid admin secret key'}, 403
             
             # Check if username already exists
@@ -172,19 +185,25 @@ class CreateFirstAdmin(Resource):
             )
             user.set_password(args['password'])
             
-            db.session.add(user)
-            db.session.commit()
-            
-            # Create access token
-            access_token = create_access_token(identity=str(user.id))
-            
-            return {
-                'message': 'First admin user created successfully',
-                'access_token': access_token,
-                'user': user.to_dict()
-            }, 201
+            try:
+                db.session.add(user)
+                db.session.commit()
+                
+                # Create access token
+                access_token = create_access_token(identity=str(user.id))
+                
+                return {
+                    'message': 'First admin user created successfully',
+                    'access_token': access_token,
+                    'user': user.to_dict()
+                }, 201
+                
+            except Exception as e:
+                db.session.rollback()
+                return {'error': f'Database error: {str(e)}'}, 500
             
         except Exception as e:
+            db.session.rollback()
             return {'error': f'First admin creation failed: {str(e)}'}, 500
 
 class Login(Resource):
@@ -204,18 +223,23 @@ class Login(Resource):
             if not user.is_active:
                 return {'error': 'Account is deactivated'}, 401
             
-            # Update last login
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-            
-            # Create access token
-            access_token = create_access_token(identity=str(user.id))
-            
-            return {
-                'message': 'Login successful',
-                'access_token': access_token,
-                'user': user.to_dict()
-            }, 200
+            try:
+                # Update last login
+                user.last_login = datetime.utcnow()
+                db.session.commit()
+                
+                # Create access token
+                access_token = create_access_token(identity=str(user.id))
+                
+                return {
+                    'message': 'Login successful',
+                    'access_token': access_token,
+                    'user': user.to_dict()
+                }, 200
+                
+            except Exception as e:
+                db.session.rollback()
+                return {'error': f'Database error during login: {str(e)}'}, 500
             
         except Exception as e:
             return {'error': f'Login failed: {str(e)}'}, 500
@@ -259,16 +283,21 @@ class PromoteToAdmin(Resource):
             if target_user.role == 'admin':
                 return {'error': 'User is already an admin'}, 400
             
-            # Promote to admin
-            target_user.role = 'admin'
-            target_user.institution_id = None  # Admins shouldn't be tied to institutions
-            
-            db.session.commit()
-            
-            return {
-                'message': f'User {target_user.username} promoted to admin successfully',
-                'user': target_user.to_dict()
-            }, 200
+            try:
+                # Promote to admin
+                target_user.role = 'admin'
+                target_user.institution_id = None  # Admins shouldn't be tied to institutions
+                
+                db.session.commit()
+                
+                return {
+                    'message': f'User {target_user.username} promoted to admin successfully',
+                    'user': target_user.to_dict()
+                }, 200
+                
+            except Exception as e:
+                db.session.rollback()
+                return {'error': f'Database error: {str(e)}'}, 500
             
         except Exception as e:
             return {'error': f'Admin promotion failed: {str(e)}'}, 500
@@ -297,13 +326,18 @@ class InstitutionRegister(Resource):
                 is_verified=False  # Requires admin approval
             )
             
-            db.session.add(institution)
-            db.session.commit()
-            
-            return {
-                'message': 'Institution registered successfully. Waiting for admin approval.',
-                'institution': institution.to_dict()
-            }, 201
+            try:
+                db.session.add(institution)
+                db.session.commit()
+                
+                return {
+                    'message': 'Institution registered successfully. Waiting for admin approval.',
+                    'institution': institution.to_dict()
+                }, 201
+                
+            except Exception as e:
+                db.session.rollback()
+                return {'error': f'Database error: {str(e)}'}, 500
             
         except Exception as e:
             return {'error': f'Institution registration failed: {str(e)}'}, 500
@@ -342,21 +376,26 @@ class InstitutionApproval(Resource):
             
             action = request.json.get('action', 'approve')
             
-            if action == 'approve':
-                institution.is_verified = True
-                message = 'Institution approved successfully'
-            elif action == 'reject':
-                institution.is_active = False
-                message = 'Institution rejected'
-            else:
-                return {'error': 'Invalid action'}, 400
-            
-            db.session.commit()
-            
-            return {
-                'message': message,
-                'institution': institution.to_dict()
-            }, 200
+            try:
+                if action == 'approve':
+                    institution.is_verified = True
+                    message = 'Institution approved successfully'
+                elif action == 'reject':
+                    institution.is_active = False
+                    message = 'Institution rejected'
+                else:
+                    return {'error': 'Invalid action'}, 400
+                
+                db.session.commit()
+                
+                return {
+                    'message': message,
+                    'institution': institution.to_dict()
+                }, 200
+                
+            except Exception as e:
+                db.session.rollback()
+                return {'error': f'Database error: {str(e)}'}, 500
             
         except Exception as e:
             return {'error': f'Institution approval failed: {str(e)}'}, 500
