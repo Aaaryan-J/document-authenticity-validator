@@ -1,12 +1,13 @@
-from flask import Flask
+from flask import Flask, send_from_directory, request
 from flask_restful import Api
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from werkzeug.utils import secure_filename
 import os
 from datetime import timedelta
-from flask import send_from_directory
+from user_routes import CertificateUpload
 
-# Import routes
+# ===== Import your routes =====
 from auth_routes import Register, Login, Profile, InstitutionRegister, InstitutionList, InstitutionApproval
 from admin_dashboard import (
     AdminDashboard, ForgeryTrends, BlacklistManagement,
@@ -17,13 +18,11 @@ from institution_portal import (
     InstitutionDashboard, BulkCertificateUpload, SingleCertificateUpload,
     InstitutionCertificates, BulkUploadHistory, DownloadTemplate
 )
-
-# Import shared db + models
-from auth_models import db, User, Institution, Certificate, VerificationLog
-
-app = Flask(__name__)
+from auth_models import db
+from ocr_service import extract_marksheet_details
 
 # ==================== CONFIG ====================
+app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///certificates.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -34,10 +33,10 @@ app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 # ==================== EXTENSIONS ====================
 api = Api(app)
 jwt = JWTManager(app)
-CORS(app, resources={r"/api/*": {"origins": "*"}})  # Single CORS configuration
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 db.init_app(app)
 
-# Create upload directories
+# ==================== CREATE UPLOAD FOLDERS ====================
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs("uploads/bulk", exist_ok=True)
 os.makedirs("uploads/templates", exist_ok=True)
@@ -68,12 +67,13 @@ api.add_resource(InstitutionCertificates, '/api/institution/certificates')
 api.add_resource(BulkUploadHistory, '/api/institution/uploads/history')
 api.add_resource(DownloadTemplate, '/api/institution/template')
 
+# ---- User Upload ----
+api.add_resource(CertificateUpload, '/api/upload')
+
 # ==================== DOWNLOADS ====================
 @app.route('/download/template/<filename>')
 def download_template_file(filename):
-    """Serve the generated template file for download."""
     return send_from_directory("uploads/templates", filename, as_attachment=True)
-
 
 # ==================== HOME ====================
 @app.route('/')
@@ -85,6 +85,7 @@ def home():
         <li><strong>Auth</strong>: /api/auth/*</li>
         <li><strong>Admin</strong>: /api/admin/*</li>
         <li><strong>Institution</strong>: /api/institution/*</li>
+        <li><strong>Upload</strong>: /api/upload</li>
     </ul>
     '''
 
