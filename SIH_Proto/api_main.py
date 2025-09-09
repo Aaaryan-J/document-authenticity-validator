@@ -4,6 +4,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 import os
 from datetime import timedelta
+from flask import send_from_directory
 
 # Import routes
 from auth_routes import Register, Login, Profile, InstitutionRegister, InstitutionList, InstitutionApproval
@@ -66,6 +67,13 @@ api.add_resource(SingleCertificateUpload, '/api/institution/upload/single')
 api.add_resource(InstitutionCertificates, '/api/institution/certificates')
 api.add_resource(BulkUploadHistory, '/api/institution/uploads/history')
 api.add_resource(DownloadTemplate, '/api/institution/template')
+
+# ==================== DOWNLOADS ====================
+@app.route('/download/template/<filename>')
+def download_template_file(filename):
+    """Serve the generated template file for download."""
+    return send_from_directory("uploads/templates", filename, as_attachment=True)
+
 
 # ==================== HOME ====================
 @app.route('/')

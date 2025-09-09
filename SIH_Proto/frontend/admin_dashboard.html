@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<style>
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f4f5f7;
+    color: #333;
+  }
+  .topnav a {
+    float: left;
+    color: #249c64;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+    font-size: 17px;
+  }
+  .topnav a:hover {
+    background-color: #ddd;
+    color: black;
+  }
+  .loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: #666;
+  }
+  .error {
+    background-color: #fee;
+    border: 1px solid #fcc;
+    color: #c66;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+</style>
+</head>
+<body>
+<nav class="flex items-center justify-between bg-white shadow-lg rounded-xl p-4 mb-8">
+  <div class="topnav">
+    <a class="name_1">Admin Dashboard</a>
+    <a class="a" href="index.html">Home</a>
+    <a href="#" onclick="showInstitutions()">Institutions</a>
+    <a href="#" onclick="showBlacklistModal()">Blacklist</a>
+    <a class="name" id="adminName">Admin</a>
+    <a href="#" onclick="logout()">Logout</a>
+  </div>
+</nav>
+
+<div id="loading" class="loading">Loading dashboard data...</div>
+<div id="error-container"></div>
+
+<section id="overview" class="mb-8">
+  <h2 class="text-2xl font-semibold text-gray-700 mb-4">Overview</h2>
+  <div id="stats-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+    </div>
+</section>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mb-4">Verification Trends</h3>
+    <canvas id="trendsChart" style="max-width:100%; max-height:400px;"></canvas>
+  </div>
+  
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mb-4">Recent High-Risk Verifications</h3>
+    <div id="high-risk-list" class="space-y-2">
+      </div>
+  </div>
+</div>
+
+<section class="mt-8">
+  <div class="bg-white p-6 rounded-lg shadow">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-semibold">Blacklist Management</h3>
+      <button onclick="showBlacklistModal()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+        Add to Blacklist
+      </button>
+    </div>
+    <div id="blacklist-entries" class="space-y-2">
+      </div>
+  </div>
+</section>
+
+<div id="blacklistModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-lg font-bold text-gray-900">Add to Blacklist</h3>
+      <button onclick="hideBlacklistModal()" class="text-gray-400 hover:text-gray-600">&times;</button>
+    </div>
+    <form id="blacklistForm">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Certificate ID</label>
+          <input type="text" name="certificate_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Name</label>
+          <input type="text" name="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Roll No</label>
+          <input type="text" name="roll_no" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Institution Name</label>
+          <input type="text" name="institution_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border px-3 py-2">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Reason *</label>
+          <textarea name="reason" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border px-3 py-2" rows="3"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Fraud Type *</label>
+          <select name="fraud_type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border px-3 py-2">
+            <option value="">Select fraud type...</option>
+            <option value="fake_cert">Fake Certificate</option>
+            <option value="data_manipulation">Data Manipulation</option>
+            <option value="identity_theft">Identity Theft</option>
+            <option value="institution_impersonation">Institution Impersonation</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Severity</label>
+          <select name="severity" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border px-3 py-2">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end space-x-2 mt-6">
+        <button type="button" onclick="hideBlacklistModal()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          Cancel
+        </button>
+        <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+          Add to Blacklist
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="institutionsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-900">Pending Institution Approvals</h3>
+        <button onclick="hideInstitutionsModal()" class="text-gray-400 hover:text-gray-600">&times;</button>
+      </div>
+      <div id="institutions-list" class="space-y-3 max-h-96 overflow-y-auto">
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE_URL = 'http://localhost:5000/api';
+let dashboardData = {};
+
+// Check authentication on load
+window.addEventListener('load', function() {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    
+    if (!token || !userData) {
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    const user = JSON.parse(userData);
+    if (user.role !== 'admin') {
+        alert('Admin access required');
+        window.location.href = 'login.html';
+        return;
+    }
+    
+    document.getElementById('adminName').textContent = `Admin: ${user.username}`;
+    
+    loadDashboardData();
+    loadBlacklistEntries();
+});
+
+async function apiCall(endpoint, method = 'GET', data = null) {
+    const token = localStorage.getItem('authToken');
+    const options = {
+        method: method,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    };
+    
+    if (data) {
+        options.body = JSON.stringify(data);
+    }
+    
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    
+    if (response.status === 401) {
+        logout();
+        return null;
+    }
+    
+    return response;
+}
+
+async function loadDashboardData() {
+    const loading = document.getElementById('loading');
+    const errorContainer = document.getElementById('error-container');
+    
+    loading.style.display = 'block';
+    errorContainer.innerHTML = '';
+    
+    try {
+        const response = await apiCall('/admin/dashboard');
+        
+        if (response && response.ok) {
+            dashboardData = await response.json();
+            updateStatsGrid(dashboardData.overview);
+            updateHighRiskVerifications(dashboardData.high_risk_verifications);
+            createTrendsChart();
+        } else {
+            throw new Error('Failed to load dashboard data');
+        }
+    } catch (error) {
+        showError('Failed to load dashboard data: ' + error.message);
+        console.error('Dashboard error:', error);
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+function updateStatsGrid(overview) {
+    const statsGrid = document.getElementById('stats-grid');
+    statsGrid.innerHTML = '';
+    
+    const stats = [
+        { label: 'Total Certificates', value: overview.total_certificates, color: 'bg-blue-500' },
+        { label: 'Total Verifications', value: overview.total_verifications, color: 'bg-green-500' },
+        { label: 'Pending Institutions', value: overview.pending_institutions, color: 'bg-orange-500' },
+        { label: 'Fraud Attempts', value: overview.fraud_attempts, color: 'bg-red-500' },
+        { label: 'Fraud Rate', value: overview.fraud_rate + '%', color: 'bg-purple-500' },
+        { label: 'Blacklist Entries', value: overview.active_blacklist_entries, color: 'bg-gray-500' }
+    ];
+    
+    stats.forEach(stat => {
+        const statDiv = document.createElement('div');
+        statDiv.className = `${stat.color} text-white p-4 rounded-lg shadow`;
+        statDiv.innerHTML = `<div class="text-2xl font-bold">${stat.value}</div><div class="text-sm">${stat.label}</div>`;
+        statsGrid.appendChild(statDiv);
+    });
+}
+
+function updateHighRiskVerifications(verifications) {
+    const container = document.getElementById('high-risk-list');
+    container.innerHTML = '';
+    
+    if (!verifications || verifications.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">No high-risk verifications found</p>';
+        return;
+    }
+    
+    verifications.slice(0, 10).forEach(verification => {
+        const div = document.createElement('div');
+        div.className = 'border-l-4 border-red-500 pl-4 py-2 bg-red-50';
+        div.innerHTML = `
+            <div class="font-medium">Risk Score: ${verification.risk_score}%</div>
+            <div class="text-sm text-gray-600">
+                File: ${verification.filename || 'Unknown'} | Valid: ${verification.is_valid ? 'Yes' : 'No'}
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+async function createTrendsChart() {
+    try {
+        const response = await apiCall('/admin/trends');
+        if (response && response.ok) {
+            const trendsData = await response.json();
+            const ctx = document.getElementById('trendsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trendsData.daily_trends.map(trend => trend.date),
+                    datasets: [{
+                        label: 'Total Attempts', data: trendsData.daily_trends.map(t => t.total_attempts),
+                        borderColor: 'blue', fill: false
+                    }, {
+                        label: 'Fraud Attempts', data: trendsData.daily_trends.map(t => t.fraud_attempts),
+                        borderColor: 'red', fill: false
+                    }]
+                },
+                options: { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true } }] } }
+            });
+        }
+    } catch (error) {
+        console.error('Failed to create trends chart:', error);
+    }
+}
+
+async function loadBlacklistEntries() {
+    try {
+        const response = await apiCall('/admin/blacklist');
+        if (response && response.ok) {
+            const data = await response.json();
+            displayBlacklistEntries(data.blacklist_entries);
+        }
+    } catch (error) {
+        console.error('Failed to load blacklist entries:', error);
+    }
+}
+
+function displayBlacklistEntries(entries) {
+    const container = document.getElementById('blacklist-entries');
+    container.innerHTML = '';
+    
+    if (!entries || entries.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">No blacklist entries found</p>';
+        return;
+    }
+    
+    entries.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'border rounded-lg p-4 bg-gray-50';
+        div.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div>
+                    <div class="font-medium">${entry.name || 'Unknown'} (ID: ${entry.certificate_id || 'N/A'})</div>
+                    <div class="text-sm text-gray-600">Reason: ${entry.reason}</div>
+                    <div class="text-xs text-gray-500 mt-1">Type: ${entry.fraud_type} | Severity: ${entry.severity}</div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="toggleBlacklistEntry(${entry.id}, ${entry.is_active})" class="text-sm px-2 py-1 rounded ${entry.is_active ? 'bg-yellow-500' : 'bg-green-500'} text-white">
+                        ${entry.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                </div>
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+// ===== NEW: Institution Management Functions =====
+async function showInstitutions() {
+    const modal = document.getElementById('institutionsModal');
+    const listContainer = document.getElementById('institutions-list');
+    listContainer.innerHTML = '<p>Loading institutions...</p>';
+    modal.classList.remove('hidden');
+    
+    try {
+        const response = await apiCall('/auth/institutions');
+        if (response && response.ok) {
+            const data = await response.json();
+            if (data.institutions.length === 0) {
+                listContainer.innerHTML = '<p>No pending institutions found.</p>';
+                return;
+            }
+
+            listContainer.innerHTML = ''; // Clear loading text
+            data.institutions.forEach(inst => {
+                const instDiv = document.createElement('div');
+                instDiv.className = 'border rounded p-3 flex justify-between items-center';
+                instDiv.innerHTML = `
+                    <div>
+                        <p class="font-bold">${inst.name} <span class="font-normal text-gray-600">(${inst.code})</span></p>
+                        <p class="text-sm text-gray-500">${inst.email || 'No email'}</p>
+                    </div>
+                    <div class="space-x-2">
+                        <button onclick="approveInstitution(${inst.id})" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">Approve</button>
+                        <button onclick="rejectInstitution(${inst.id})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Reject</button>
+                    </div>`;
+                listContainer.appendChild(instDiv);
+            });
+        } else {
+            listContainer.innerHTML = '<p class="text-red-500">Failed to load institutions.</p>';
+        }
+    } catch (e) {
+        listContainer.innerHTML = `<p class="text-red-500">Error: ${e.message}</p>`;
+    }
+}
+
+function hideInstitutionsModal() {
+    document.getElementById('institutionsModal').classList.add('hidden');
+}
+
+async function approveInstitution(id) {
+    if (!confirm('Are you sure you want to approve this institution?')) return;
+    const response = await apiCall(`/auth/institutions/${id}/approve`, 'POST', { action: 'approve' });
+    if (response && response.ok) {
+        alert('Institution approved.');
+        showInstitutions(); // Refresh the list
+        loadDashboardData(); // Refresh dashboard stats
+    } else {
+        alert('Failed to approve institution.');
+    }
+}
+
+async function rejectInstitution(id) {
+    if (!confirm('Are you sure you want to reject this institution?')) return;
+    const response = await apiCall(`/auth/institutions/${id}/approve`, 'POST', { action: 'reject' });
+    if (response && response.ok) {
+        alert('Institution rejected.');
+        showInstitutions(); // Refresh the list
+        loadDashboardData(); // Refresh dashboard stats
+    } else {
+        alert('Failed to reject institution.');
+    }
+}
+// ===== End of New Functions =====
+
+// Modal functions
+function showBlacklistModal() { document.getElementById('blacklistModal').classList.remove('hidden'); }
+function hideBlacklistModal() { document.getElementById('blacklistModal').classList.add('hidden'); document.getElementById('blacklistForm').reset(); }
+
+document.getElementById('blacklistForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await apiCall('/admin/blacklist', 'POST', data);
+        if (response && response.ok) {
+            alert('Entry added to blacklist successfully');
+            hideBlacklistModal();
+            loadBlacklistEntries();
+            loadDashboardData();
+        } else {
+            const error = await response.json();
+            alert('Failed to add to blacklist: ' + error.error);
+        }
+    } catch (error) {
+        alert('Error adding to blacklist: ' + error.message);
+    }
+});
+
+async function toggleBlacklistEntry(entryId, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    try {
+        const response = await apiCall(`/admin/blacklist/${entryId}`, 'PATCH', { action });
+        if (response && response.ok) {
+            loadBlacklistEntries();
+        } else {
+            const error = await response.json();
+            alert('Failed to update entry: ' + error.error);
+        }
+    } catch (error) {
+        alert('Error updating entry: ' + error.message);
+    }
+}
+
+function showError(message) {
+    const errorContainer = document.getElementById('error-container');
+    errorContainer.innerHTML = `<div class="error">${message}</div>`;
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    window.location.href = 'login.html';
+}
+</script>
+</body>
+</html>

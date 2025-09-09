@@ -1,0 +1,71 @@
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    button {
+      background-color: #04AA6D;
+      color: white;
+      padding: 5px 10px;
+      margin: 8px 0;
+      border: none;
+      cursor: pointer;
+      width: 10%;
+    }
+    div.box{
+      border: 15px;
+      padding: 50px;
+      margin: 100px 100px 75px 100px;
+    }
+    .topnav {
+      overflow: hidden;
+      background-color: #333;
+      border-radius: 10px;
+    }
+    .topnav a {
+      float: left;
+      color: #f2f2f2;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      font-size: 17px;
+    }
+    h2 {
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+<div class="topnav">
+  <a class="a" href="#">Home</a>
+  <a href="#">Contact</a>
+  <a href="#">About</a>
+  <a href="#" id="logoutBtn">Logout</a>
+</div>
+
+<div class="box">
+  <h2>Upload file here</h2>
+  <center>
+    <form action="upload" method="post" enctype="multipart/form-data">
+      <label for="fileUpload">Select a file:</label>
+      <input type="file" id="fileUpload" name="uploadedFile">
+      <br>
+      <button type="submit">Upload</button>
+    </form>
+  </center>
+</div>
+
+<script>
+  // Logout button functionality
+document.getElementById("logoutBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+
+    // Clear token and user info
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userData");
+
+    // Redirect to login page
+    window.location.href = "./login.html";
+});
+</script>
+</body>
+</html>

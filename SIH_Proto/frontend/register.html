@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body { font-family: sans-serif; }
+input[type=text], input[type=password], input[type=email] {
+  width: 25%;
+  padding: 10px;
+  margin: 5px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+div.box{
+  border: 15px;
+  padding: 50px;
+  margin: 50px auto;
+  max-width: 800px;
+  text-align: center;
+}
+button {
+  background-color: #04AA6D;
+  color: white;
+  padding: 10px 15px;
+  margin: 15px 0;
+  border: none;
+  cursor: pointer;
+  width: 25%;
+}
+h2{ text-align:center; }
+.alert {
+  padding: 15px;
+  margin: 20px auto;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  width: 50%;
+}
+.alert-success { color: #3c763d; background-color: #dff0d8; border-color: #d6e9c6; }
+.alert-danger { color: #a94442; background-color: #f2dede; border-color: #ebccd1; }
+.loading { display: none; color: #666; }
+</style>
+</head>
+<body>
+<div class="box">
+    <h2>Registration</h2>
+
+    <div id="alert-container"></div>
+    <div id="loading" class="loading">Registering...</div>
+
+    <form id="registerForm" autocomplete="off"">
+        <div>
+            <label for="email">Email</label><br>
+            <input type="email" placeholder="Enter email" id="email" required>
+        </div>
+        <div>
+            <label for="username">Username</label><br>
+            <input type="text" placeholder="Enter Username" id="username" required>
+        </div>
+        <div>
+            <label for="password">Password</label><br>
+            <input type="password" placeholder="Enter password" id="password" required>
+        </div>
+        <div>
+            <label for="password-confirm">Confirm Password</label><br>
+            <input type="password" placeholder="Confirm password" id="password-confirm" required>
+        </div>
+        <div>
+            <label for="role">Role</label><br>
+            <select id="role" style="padding: 10px; width: 25%;">
+                <option value="user">User</option>
+                <option value="institution">Institution</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+        <div id="institution-code-group" style="display:none; margin-top: 10px;">
+            <label for="institution-code">Institution Code</label><br>
+            <input type="text" placeholder="Enter institution code" id="institution-code">
+        </div>
+        <br>
+        <button type="submit">Register</button>
+        <p>Already have an account? <a href="login.html">Login here</a></p>
+    </form>
+</div>
+
+<script>
+const API_BASE_URL = 'http://localhost:5000/api';
+const roleSelect = document.getElementById('role');
+const institutionCodeGroup = document.getElementById('institution-code-group');
+const registerForm = document.getElementById('registerForm');
+
+// toggle institution code field
+roleSelect.addEventListener('change', function () {
+    institutionCodeGroup.style.display = (this.value === 'institution') ? 'block' : 'none';
+});
+
+// completely kill native form reload
+registerForm.onsubmit = (e) => {
+    e.preventDefault();
+    return false;
+};
+
+// actual handler
+async function handleRegister(e) {
+    e.preventDefault();
+    console.log("🚀 Handling register...");
+
+    const email = document.getElementById('email').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const passwordConfirm = document.getElementById('password-confirm').value;
+    const role = document.getElementById('role').value;
+    const institutionCode = document.getElementById('institution-code').value;
+
+    const loading = document.getElementById('loading');
+    const alertContainer = document.getElementById('alert-container');
+    alertContainer.innerHTML = '';
+
+    if (password !== passwordConfirm) {
+        showAlert('Passwords do not match!', 'danger');
+        return;
+    }
+
+    loading.style.display = 'block';
+
+    const payload = { email, username, password, role };
+    if (role === 'institution') {
+        if (!institutionCode) {
+            showAlert('Institution code is required for institution role.', 'danger');
+            loading.style.display = 'none';
+            return;
+        }
+        payload.institution_code = institutionCode;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        console.log("📡 Response status:", response.status);
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            console.warn("⚠️ Could not parse JSON:", parseErr);
+            data = {};
+        }
+
+        if (response.ok) {
+            console.log("✅ Success branch entered:", data);
+            showAlert('Registration successful! Redirecting...', 'success');
+
+            // instant redirect (remove timeout for testing)
+            window.location.href = './login.html'; 
+        } else {
+            console.error("❌ Error response:", data);
+            showAlert(data.error || 'Registration failed', 'danger');
+        }
+    } catch (err) {
+        showAlert('Network error. Please try again.', 'danger');
+        console.error("💀 Registration error:", err);
+    } finally {
+        loading.style.display = 'none';
+    }
+}
+
+// attach handler
+registerForm.addEventListener('submit', handleRegister);
+
+// helper to show alerts
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alert-container');
+    alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+}
+</script>
+</body>
+</html>

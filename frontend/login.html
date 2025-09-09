@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,7 +15,8 @@ input[type=text], input[type=password] {
 div.box{
   border: 15px;
   padding: 50px;
-  margin: 100px 100px 75px 100px;}
+  margin: 100px 100px 75px 100px;
+}
 button {
   background-color: #04AA6D;
   color: white;
@@ -23,7 +25,6 @@ button {
   border: none;
   cursor: pointer;
   width: 10%;
-  
 }
 p.a{
 text-align:center;}
@@ -31,28 +32,147 @@ p.b{
 text-align:center;}
 h2{
 text-align:center;}
+
+.alert {
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+}
+.alert-success {
+  color: #3c763d;
+  background-color: #dff0d8;
+  border-color: #d6e9c6;
+}
+.alert-danger {
+  color: #a94442;
+  background-color: #f2dede;
+  border-color: #ebccd1;
+}
+.loading {
+  display: none;
+  text-align: center;
+  color: #666;
+}
 </style>
 </head>
 <body>
 <div class="box">
-  <h2> Login for certificate verification</h2>
-<form><center>
-    <div class="container">
-      <label for="uname"><p class="a">Username</p></label>
-      <input type="text" placeholder="Enter Username" name="uname" required>
-<br>
-      <label for="psw"><p class="b">Password</p></label>
-      <input type="password" placeholder="Enter Password" name="psw" required><br>
-    <button type="submit">Login</button><br>
-      <label>
-        <input type="checkbox" checked="checked" name="remember"> Remember me
-      </label>
-    </div>
+  <h2>Login for Certificate Verification</h2>
+  
+  <!-- Alert messages -->
+  <div id="alert-container"></div>
+  
+  <!-- Loading indicator -->
+  <div id="loading" class="loading">Logging in...</div>
+  
+  <form id="loginForm">
+    <center>
+      <div class="container">
+        <label for="username"><p class="a">Username</p></label>
+        <input type="text" placeholder="Enter Username" name="username" id="username" required>
+        <br>
+        <label for="password"><p class="b">Password</p></label>
+        <input type="password" placeholder="Enter Password" name="password" id="password" required><br>
+        <button type="submit">Login</button><br>
+        <label>
+          <input type="checkbox" name="remember"> Remember me
+        </label>
+      </div>
 
-    <div class="container">
-    <div class="reg"><a href="C:\Users\Vidula Bhatia\Desktop\V\College\hackathon\register.html">Register</a></div>
-    </div>
-  </center></form>
-  </div>
+      <div class="container">
+        <div class="reg"><a href="register.html">Register</a></div>
+      </div>
+    </center>
+  </form>
+</div>
+
+<script>
+const API_BASE_URL = 'http://localhost:5000/api';
+
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const loading = document.getElementById('loading');
+    const alertContainer = document.getElementById('alert-container');
+    
+    // Clear previous alerts
+    alertContainer.innerHTML = '';
+    loading.style.display = 'block';
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            // Store token and user data
+            localStorage.setItem('authToken', data.access_token);
+            localStorage.setItem('userData', JSON.stringify(data.user));
+            
+            showAlert('Login successful! Redirecting...', 'success');
+            
+            // Redirect based on role
+            setTimeout(() => {
+                if (data.user.role === 'admin') {
+                    window.location.href = 'admin_dashboard.html';
+                } else if (data.user.role === 'institution') {
+                    window.location.href = 'upload.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }, 1000);
+        } else {
+            showAlert(data.error || 'Login failed', 'danger');
+        }
+    } catch (error) {
+        showAlert('Network error. Please try again.', 'danger');
+        console.error('Login error:', error);
+    } finally {
+        loading.style.display = 'none';
+    }
+});
+
+function showAlert(message, type) {
+    const alertContainer = document.getElementById('alert-container');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type}`;
+    alertDiv.textContent = message;
+    alertContainer.appendChild(alertDiv);
+    
+    // Auto-hide success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+    }
+}
+
+// Check if already logged in
+window.addEventListener('load', function() {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    
+    if (token && userData) {
+        const user = JSON.parse(userData);
+        if (user.role === 'admin') {
+            window.location.href = 'admin_dashboard.html';
+        } else if (user.role === 'institution') {
+            window.location.href = 'upload.html';
+        }
+    }
+});
+</script>
 </body>
 </html>
