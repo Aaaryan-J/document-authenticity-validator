@@ -120,12 +120,12 @@ if (response.ok) {
 
         if (remember) {
             // Persistent storage across browser sessions
-            localStorage.setItem('authToken', data.access_token);
-            localStorage.setItem('userData', JSON.stringify(data.user));
+            localStorage.setItem('token', data.access_token);
+            localStorage.setItem('user', JSON.stringify(data.user));
         } else {
             // Storage cleared when browser closes
-            sessionStorage.setItem('authToken', data.access_token);
-            sessionStorage.setItem('userData', JSON.stringify(data.user));
+            sessionStorage.setItem('token', data.access_token);
+            sessionStorage.setItem('user', JSON.stringify(data.user));
         }
 
         showAlert('Login successful! Redirecting...', 'success');
@@ -169,8 +169,8 @@ if (response.ok) {
 
 // Check if already logged in and redirect
 window.addEventListener('load', function() {
-    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    const userData = localStorage.getItem('userData') || sessionStorage.getItem('userData');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const userData = localStorage.getItem('user') || sessionStorage.getItem('user');
 
     if (token && userData) {
         const user = JSON.parse(userData);

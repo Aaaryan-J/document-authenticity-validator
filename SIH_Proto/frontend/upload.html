@@ -59,9 +59,11 @@
 document.getElementById("logoutBtn").addEventListener("click", (e) => {
     e.preventDefault();
 
-    // Clear token and user info
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
+    // Clear both storages
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("user");
 
     // Redirect to login page
     window.location.href = "./login.html";

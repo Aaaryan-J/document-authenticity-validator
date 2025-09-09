@@ -159,308 +159,125 @@
 
 <script>
 const API_BASE_URL = 'http://localhost:5000/api';
-let dashboardData = {};
+let token = localStorage.getItem('token') || sessionStorage.getItem('token');
+let userData = localStorage.getItem('user') || sessionStorage.getItem('user');
 
-// Check authentication on load
-window.addEventListener('load', function() {
-    const token = localStorage.getItem('authToken');
-    const userData = localStorage.getItem('userData');
-    
-    if (!token || !userData) {
-        window.location.href = 'login.html';
-        return;
-    }
-    
+// Redirect if not logged in or not admin
+if (!token || !userData) {
+    window.location.href = 'login.html';
+} else {
     const user = JSON.parse(userData);
     if (user.role !== 'admin') {
         alert('Admin access required');
         window.location.href = 'login.html';
-        return;
     }
-    
     document.getElementById('adminName').textContent = `Admin: ${user.username}`;
-    
-    loadDashboardData();
-    loadBlacklistEntries();
-});
+}
 
-async function apiCall(endpoint, method = 'GET', data = null) {
-    const token = localStorage.getItem('authToken');
+// Generic API caller
+async function apiCall(endpoint, method='GET', data=null) {
     const options = {
-        method: method,
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        }
+        method,
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
     };
-    
-    if (data) {
-        options.body = JSON.stringify(data);
-    }
-    
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    
-    if (response.status === 401) {
-        logout();
-        return null;
-    }
-    
-    return response;
+    if (data) options.body = JSON.stringify(data);
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    if (res.status === 401) logout();
+    return res;
 }
 
-async function loadDashboardData() {
-    const loading = document.getElementById('loading');
-    const errorContainer = document.getElementById('error-container');
-    
-    loading.style.display = 'block';
-    errorContainer.innerHTML = '';
-    
-    try {
-        const response = await apiCall('/admin/dashboard');
-        
-        if (response && response.ok) {
-            dashboardData = await response.json();
-            updateStatsGrid(dashboardData.overview);
-            updateHighRiskVerifications(dashboardData.high_risk_verifications);
-            createTrendsChart();
-        } else {
-            throw new Error('Failed to load dashboard data');
-        }
-    } catch (error) {
-        showError('Failed to load dashboard data: ' + error.message);
-        console.error('Dashboard error:', error);
-    } finally {
-        loading.style.display = 'none';
-    }
-}
-
-function updateStatsGrid(overview) {
-    const statsGrid = document.getElementById('stats-grid');
-    statsGrid.innerHTML = '';
-    
-    const stats = [
-        { label: 'Total Certificates', value: overview.total_certificates, color: 'bg-blue-500' },
-        { label: 'Total Verifications', value: overview.total_verifications, color: 'bg-green-500' },
-        { label: 'Pending Institutions', value: overview.pending_institutions, color: 'bg-orange-500' },
-        { label: 'Fraud Attempts', value: overview.fraud_attempts, color: 'bg-red-500' },
-        { label: 'Fraud Rate', value: overview.fraud_rate + '%', color: 'bg-purple-500' },
-        { label: 'Blacklist Entries', value: overview.active_blacklist_entries, color: 'bg-gray-500' }
-    ];
-    
-    stats.forEach(stat => {
-        const statDiv = document.createElement('div');
-        statDiv.className = `${stat.color} text-white p-4 rounded-lg shadow`;
-        statDiv.innerHTML = `<div class="text-2xl font-bold">${stat.value}</div><div class="text-sm">${stat.label}</div>`;
-        statsGrid.appendChild(statDiv);
-    });
-}
-
-function updateHighRiskVerifications(verifications) {
-    const container = document.getElementById('high-risk-list');
-    container.innerHTML = '';
-    
-    if (!verifications || verifications.length === 0) {
-        container.innerHTML = '<p class="text-gray-500">No high-risk verifications found</p>';
-        return;
-    }
-    
-    verifications.slice(0, 10).forEach(verification => {
-        const div = document.createElement('div');
-        div.className = 'border-l-4 border-red-500 pl-4 py-2 bg-red-50';
-        div.innerHTML = `
-            <div class="font-medium">Risk Score: ${verification.risk_score}%</div>
-            <div class="text-sm text-gray-600">
-                File: ${verification.filename || 'Unknown'} | Valid: ${verification.is_valid ? 'Yes' : 'No'}
-            </div>`;
-        container.appendChild(div);
-    });
-}
-
-async function createTrendsChart() {
-    try {
-        const response = await apiCall('/admin/trends');
-        if (response && response.ok) {
-            const trendsData = await response.json();
-            const ctx = document.getElementById('trendsChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: trendsData.daily_trends.map(trend => trend.date),
-                    datasets: [{
-                        label: 'Total Attempts', data: trendsData.daily_trends.map(t => t.total_attempts),
-                        borderColor: 'blue', fill: false
-                    }, {
-                        label: 'Fraud Attempts', data: trendsData.daily_trends.map(t => t.fraud_attempts),
-                        borderColor: 'red', fill: false
-                    }]
-                },
-                options: { responsive: true, scales: { yAxes: [{ ticks: { beginAtZero: true } }] } }
-            });
-        }
-    } catch (error) {
-        console.error('Failed to create trends chart:', error);
-    }
-}
-
-async function loadBlacklistEntries() {
-    try {
-        const response = await apiCall('/admin/blacklist');
-        if (response && response.ok) {
-            const data = await response.json();
-            displayBlacklistEntries(data.blacklist_entries);
-        }
-    } catch (error) {
-        console.error('Failed to load blacklist entries:', error);
-    }
-}
-
-function displayBlacklistEntries(entries) {
-    const container = document.getElementById('blacklist-entries');
-    container.innerHTML = '';
-    
-    if (!entries || entries.length === 0) {
-        container.innerHTML = '<p class="text-gray-500">No blacklist entries found</p>';
-        return;
-    }
-    
-    entries.forEach(entry => {
-        const div = document.createElement('div');
-        div.className = 'border rounded-lg p-4 bg-gray-50';
-        div.innerHTML = `
-            <div class="flex justify-between items-start">
-                <div>
-                    <div class="font-medium">${entry.name || 'Unknown'} (ID: ${entry.certificate_id || 'N/A'})</div>
-                    <div class="text-sm text-gray-600">Reason: ${entry.reason}</div>
-                    <div class="text-xs text-gray-500 mt-1">Type: ${entry.fraud_type} | Severity: ${entry.severity}</div>
-                </div>
-                <div class="flex space-x-2">
-                    <button onclick="toggleBlacklistEntry(${entry.id}, ${entry.is_active})" class="text-sm px-2 py-1 rounded ${entry.is_active ? 'bg-yellow-500' : 'bg-green-500'} text-white">
-                        ${entry.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
-                </div>
-            </div>`;
-        container.appendChild(div);
-    });
-}
-
-// ===== NEW: Institution Management Functions =====
-async function showInstitutions() {
-    const modal = document.getElementById('institutionsModal');
-    const listContainer = document.getElementById('institutions-list');
-    listContainer.innerHTML = '<p>Loading institutions...</p>';
-    modal.classList.remove('hidden');
-    
-    try {
-        const response = await apiCall('/auth/institutions');
-        if (response && response.ok) {
-            const data = await response.json();
-            if (data.institutions.length === 0) {
-                listContainer.innerHTML = '<p>No pending institutions found.</p>';
-                return;
-            }
-
-            listContainer.innerHTML = ''; // Clear loading text
-            data.institutions.forEach(inst => {
-                const instDiv = document.createElement('div');
-                instDiv.className = 'border rounded p-3 flex justify-between items-center';
-                instDiv.innerHTML = `
-                    <div>
-                        <p class="font-bold">${inst.name} <span class="font-normal text-gray-600">(${inst.code})</span></p>
-                        <p class="text-sm text-gray-500">${inst.email || 'No email'}</p>
-                    </div>
-                    <div class="space-x-2">
-                        <button onclick="approveInstitution(${inst.id})" class="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">Approve</button>
-                        <button onclick="rejectInstitution(${inst.id})" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Reject</button>
-                    </div>`;
-                listContainer.appendChild(instDiv);
-            });
-        } else {
-            listContainer.innerHTML = '<p class="text-red-500">Failed to load institutions.</p>';
-        }
-    } catch (e) {
-        listContainer.innerHTML = `<p class="text-red-500">Error: ${e.message}</p>`;
-    }
-}
-
-function hideInstitutionsModal() {
-    document.getElementById('institutionsModal').classList.add('hidden');
-}
-
-async function approveInstitution(id) {
-    if (!confirm('Are you sure you want to approve this institution?')) return;
-    const response = await apiCall(`/auth/institutions/${id}/approve`, 'POST', { action: 'approve' });
-    if (response && response.ok) {
-        alert('Institution approved.');
-        showInstitutions(); // Refresh the list
-        loadDashboardData(); // Refresh dashboard stats
-    } else {
-        alert('Failed to approve institution.');
-    }
-}
-
-async function rejectInstitution(id) {
-    if (!confirm('Are you sure you want to reject this institution?')) return;
-    const response = await apiCall(`/auth/institutions/${id}/approve`, 'POST', { action: 'reject' });
-    if (response && response.ok) {
-        alert('Institution rejected.');
-        showInstitutions(); // Refresh the list
-        loadDashboardData(); // Refresh dashboard stats
-    } else {
-        alert('Failed to reject institution.');
-    }
-}
-// ===== End of New Functions =====
-
-// Modal functions
-function showBlacklistModal() { document.getElementById('blacklistModal').classList.remove('hidden'); }
-function hideBlacklistModal() { document.getElementById('blacklistModal').classList.add('hidden'); document.getElementById('blacklistForm').reset(); }
-
-document.getElementById('blacklistForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    
-    try {
-        const response = await apiCall('/admin/blacklist', 'POST', data);
-        if (response && response.ok) {
-            alert('Entry added to blacklist successfully');
-            hideBlacklistModal();
-            loadBlacklistEntries();
-            loadDashboardData();
-        } else {
-            const error = await response.json();
-            alert('Failed to add to blacklist: ' + error.error);
-        }
-    } catch (error) {
-        alert('Error adding to blacklist: ' + error.message);
-    }
-});
-
-async function toggleBlacklistEntry(entryId, isActive) {
-    const action = isActive ? 'deactivate' : 'activate';
-    try {
-        const response = await apiCall(`/admin/blacklist/${entryId}`, 'PATCH', { action });
-        if (response && response.ok) {
-            loadBlacklistEntries();
-        } else {
-            const error = await response.json();
-            alert('Failed to update entry: ' + error.error);
-        }
-    } catch (error) {
-        alert('Error updating entry: ' + error.message);
-    }
-}
-
-function showError(message) {
-    const errorContainer = document.getElementById('error-container');
-    errorContainer.innerHTML = `<div class="error">${message}</div>`;
-}
-
+// Logout
 function logout() {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     window.location.href = 'login.html';
 }
+
+// Load dashboard data
+async function loadDashboardData() {
+    document.getElementById('loading').style.display = 'block';
+    try {
+        const res = await apiCall('/admin/dashboard');
+        if (res.ok) {
+            const data = await res.json();
+            updateStatsGrid(data.overview);
+            updateHighRisk(data.high_risk_verifications);
+            createTrendsChart(data.trends);
+        } else {
+            showError('Failed to load dashboard data');
+        }
+    } catch (err) {
+        showError('Network error: ' + err.message);
+    } finally {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
+
+// Update stats grid
+function updateStatsGrid(overview) {
+    const grid = document.getElementById('stats-grid');
+    grid.innerHTML = '';
+    const stats = [
+        {label:'Total Certificates', val:overview.total_certificates, color:'bg-blue-500'},
+        {label:'Total Verifications', val:overview.total_verifications, color:'bg-green-500'},
+        {label:'Pending Institutions', val:overview.pending_institutions, color:'bg-orange-500'},
+        {label:'Fraud Attempts', val:overview.fraud_attempts, color:'bg-red-500'},
+        {label:'Fraud Rate', val:overview.fraud_rate+'%', color:'bg-purple-500'},
+        {label:'Blacklist Entries', val:overview.active_blacklist_entries, color:'bg-gray-500'}
+    ];
+    stats.forEach(s=>{
+        const div = document.createElement('div');
+        div.className = `${s.color} text-white p-4 rounded-lg shadow`;
+        div.innerHTML = `<div class="text-2xl font-bold">${s.val}</div><div class="text-sm">${s.label}</div>`;
+        grid.appendChild(div);
+    });
+}
+
+// Update high-risk verifications
+function updateHighRisk(list) {
+    const container = document.getElementById('high-risk-list');
+    container.innerHTML = '';
+    if(!list || list.length===0){
+        container.innerHTML='<p class="text-gray-500">No high-risk verifications found</p>';
+        return;
+    }
+    list.slice(0,10).forEach(v=>{
+        const div = document.createElement('div');
+        div.className='border-l-4 border-red-500 pl-4 py-2 bg-red-50';
+        div.innerHTML=`<div class="font-medium">Risk Score: ${v.risk_score}%</div>
+                       <div class="text-sm text-gray-600">File: ${v.filename||'Unknown'} | Valid: ${v.is_valid?'Yes':'No'}</div>`;
+        container.appendChild(div);
+    });
+}
+
+// Chart.js trends
+function createTrendsChart(trends){
+    const ctx = document.getElementById('trendsChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data:{
+            labels: trends.map(t=>t.date),
+            datasets:[
+                {label:'Total Attempts', data:trends.map(t=>t.total_attempts), borderColor:'blue', fill:false},
+                {label:'Fraud Attempts', data:trends.map(t=>t.fraud_attempts), borderColor:'red', fill:false}
+            ]
+        },
+        options:{responsive:true, scales:{yAxes:[{ticks:{beginAtZero:true}}]}}
+    });
+}
+
+// Error helper
+function showError(msg){
+    const c = document.getElementById('error-container');
+    c.innerHTML = `<div class="error">${msg}</div>`;
+}
+
+// Initial load
+window.addEventListener('load', ()=>{
+    loadDashboardData();
+});
 </script>
 </body>
 </html>

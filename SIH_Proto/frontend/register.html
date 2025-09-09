@@ -48,7 +48,7 @@ h2{ text-align:center; }
     <div id="alert-container"></div>
     <div id="loading" class="loading">Registering...</div>
 
-    <form id="registerForm" autocomplete="off"">
+    <form id="registerForm" autocomplete="off">
         <div>
             <label for="email">Email</label><br>
             <input type="email" placeholder="Enter email" id="email" required>
@@ -73,10 +73,19 @@ h2{ text-align:center; }
                 <option value="admin">Admin</option>
             </select>
         </div>
+        
+        <!-- Institution code (only visible if institution role selected) -->
         <div id="institution-code-group" style="display:none; margin-top: 10px;">
             <label for="institution-code">Institution Code</label><br>
             <input type="text" placeholder="Enter institution code" id="institution-code">
         </div>
+
+        <!-- Admin secret (only visible if admin role selected) -->
+        <div id="admin-secret-group" style="display:none; margin-top: 10px;">
+            <label for="admin-secret">Admin Secret Code</label><br>
+            <input type="text" placeholder="Enter admin secret code" id="admin-secret">
+        </div>
+
         <br>
         <button type="submit">Register</button>
         <p>Already have an account? <a href="login.html">Login here</a></p>
@@ -87,14 +96,16 @@ h2{ text-align:center; }
 const API_BASE_URL = 'http://localhost:5000/api';
 const roleSelect = document.getElementById('role');
 const institutionCodeGroup = document.getElementById('institution-code-group');
+const adminSecretGroup = document.getElementById('admin-secret-group');
 const registerForm = document.getElementById('registerForm');
 
-// toggle institution code field
+// toggle institution/admin code fields
 roleSelect.addEventListener('change', function () {
     institutionCodeGroup.style.display = (this.value === 'institution') ? 'block' : 'none';
+    adminSecretGroup.style.display = (this.value === 'admin') ? 'block' : 'none';
 });
 
-// completely kill native form reload
+// kill native form reload
 registerForm.onsubmit = (e) => {
     e.preventDefault();
     return false;
@@ -111,6 +122,7 @@ async function handleRegister(e) {
     const passwordConfirm = document.getElementById('password-confirm').value;
     const role = document.getElementById('role').value;
     const institutionCode = document.getElementById('institution-code').value;
+    const adminSecret = document.getElementById('admin-secret').value;
 
     const loading = document.getElementById('loading');
     const alertContainer = document.getElementById('alert-container');
@@ -124,6 +136,7 @@ async function handleRegister(e) {
     loading.style.display = 'block';
 
     const payload = { email, username, password, role };
+
     if (role === 'institution') {
         if (!institutionCode) {
             showAlert('Institution code is required for institution role.', 'danger');
@@ -133,6 +146,15 @@ async function handleRegister(e) {
         payload.institution_code = institutionCode;
     }
 
+    if (role === 'admin') {
+        if (!adminSecret) {
+            showAlert('Secret code is required for admin registration.', 'danger');
+            loading.style.display = 'none';
+            return;
+        }
+        payload.admin_secret = adminSecret;
+    }
+
     try {
         const response = await fetch(`${API_BASE_URL}/auth/register`, {
             method: 'POST',
@@ -140,28 +162,26 @@ async function handleRegister(e) {
             body: JSON.stringify(payload)
         });
 
-        console.log("📡 Response status:", response.status);
+        console.log("Response status:", response.status);
         let data;
         try {
             data = await response.json();
         } catch (parseErr) {
-            console.warn("⚠️ Could not parse JSON:", parseErr);
+            console.warn("Could not parse JSON:", parseErr);
             data = {};
         }
 
         if (response.ok) {
-            console.log("✅ Success branch entered:", data);
+            console.log("Success branch entered:", data);
             showAlert('Registration successful! Redirecting...', 'success');
-
-            // instant redirect (remove timeout for testing)
             window.location.href = './login.html'; 
         } else {
-            console.error("❌ Error response:", data);
+            console.error("Error response:", data);
             showAlert(data.error || 'Registration failed', 'danger');
         }
     } catch (err) {
         showAlert('Network error. Please try again.', 'danger');
-        console.error("💀 Registration error:", err);
+        console.error("Registration error:", err);
     } finally {
         loading.style.display = 'none';
     }
