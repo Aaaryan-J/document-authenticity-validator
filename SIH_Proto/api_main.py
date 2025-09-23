@@ -7,7 +7,7 @@ import os
 from datetime import timedelta
 from user_routes import CertificateUpload
 
-# ===== Import your routes =====
+# ===== Import routes =====
 from auth_routes import Register, Login, Profile, InstitutionRegister, InstitutionList, InstitutionApproval
 from admin_dashboard import (
     AdminDashboard, ForgeryTrends, BlacklistManagement,
@@ -22,7 +22,7 @@ from auth_models import db
 from ocr_service import extract_marksheet_details
 
 # ==================== CONFIG ====================
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///certificates.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -88,6 +88,14 @@ def home():
         <li><strong>Upload</strong>: /api/upload</li>
     </ul>
     '''
+
+@app.route("/")
+def index():
+    return send_from_directory(app.static_folder, "index.html")
+
+@app.route("/<path:filename>")
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
 
 # ==================== INIT DB ====================
 if __name__ == '__main__':

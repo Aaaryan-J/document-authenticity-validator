@@ -1,10 +1,13 @@
+from datetime import datetime
+import random
 import os
 import logging
 from flask import request
 from flask_restful import Resource
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
-from ocr_service import extract_marksheet_details
+from auth_models import db  # your DB models
+from auth_models import Certificate  # assuming you have a Certificate model
 
 logger = logging.getLogger(__name__)
 UPLOAD_FOLDER = "./uploads"
@@ -15,36 +18,47 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class CertificateUpload(Resource):
-    """Flask-RESTful Resource for certificate upload and OCR"""
+    """Bypass OCR for prototype/demo"""
 
     @jwt_required()
     def post(self):
         try:
-            if "uploadedFile" not in request.files:
-                return {"error": "No file part in request"}, 400
+            current_user_id = get_jwt_identity()  # your logged-in user's ID
 
-            file = request.files["uploadedFile"]
-            if file.filename == "":
-                return {"error": "No file selected"}, 400
+            # Dummy certificate data
+            dummy_data = {
+                "certificate_id": f"CERT-{random.randint(1000,9999)}",
+                "roll_no": f"ROLL-{random.randint(100,999)}",
+                "name": "John Doe",
+                "marks": random.randint(50,100),
+                "institution_id": 1,  # demo institution
+                "course": "Computer Science",
+                "graduation_date": datetime.utcnow().date()
+            }
 
-            if not allowed_file(file.filename):
-                return {"error": "Only PNG, JPG, JPEG allowed"}, 400
+            cert = Certificate(
+                certificate_id=dummy_data["certificate_id"],
+                roll_no=dummy_data["roll_no"],
+                name=dummy_data["name"],
+                marks=dummy_data["marks"],
+                institution_id=dummy_data["institution_id"],
+                course=dummy_data["course"],
+                graduation_date=dummy_data["graduation_date"],
+                is_verified=True,
+                added_by=current_user_id
+            )
 
-            current_user = get_jwt_identity()
-            filename = secure_filename(file.filename) or "uploaded_file.jpg"
-            filepath = os.path.join(UPLOAD_FOLDER, filename)
-            file.save(filepath)
+            db.session.add(cert)
+            db.session.commit()
 
-            ocr_data = extract_marksheet_details(filepath)
-            if not isinstance(ocr_data, dict):
-                return {"error": "OCR returned invalid data"}, 500
-
-            os.remove(filepath)
-            return {"success": True, "message": "File processed", "data": ocr_data}, 200
+            return {
+                "success": True,
+                "message": "Dummy certificate added successfully",
+                "data": cert.to_dict()
+            }, 200
 
         except Exception as e:
             return {"error": f"Server error: {str(e)}"}, 500
 
     def options(self):
-        """Handle preflight CORS requests"""
         return {}, 200

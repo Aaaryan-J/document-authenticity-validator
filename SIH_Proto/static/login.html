@@ -228,11 +228,11 @@ if (response.ok) {
         // Redirect based on role
         setTimeout(() => {
             if (data.user.role === 'admin') {
-                window.location.href = 'admin_dashboard.html';
+                window.location.href = '/admin_dashboard.html';
             } else if (data.user.role === 'institution') {
-                window.location.href = 'institution_dashboard.html';
+                window.location.href = '/institution_dashboard.html';
             } else {
-                window.location.href = 'index.html'; 
+                window.location.href = '/upload.html'; 
             }
         }, 1000);
     
@@ -272,11 +272,11 @@ window.addEventListener('load', function() {
         showAlert('Already logged in. Redirecting...', 'success');
         setTimeout(() => {
             if (user.role === 'admin') {
-                window.location.href = 'admin_dashboard.html';
+                window.location.href = '/admin_dashboard.html';
             } else if (user.role === 'institution') {
-                window.location.href = 'institution_dashboard.html';
+                window.location.href = '/institution_dashboard.html';
             } else {
-                window.location.href = 'upload.html';
+                window.location.href = '/upload.html';
             }
         }, 1000);
     }

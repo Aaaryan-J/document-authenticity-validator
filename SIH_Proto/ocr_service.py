@@ -40,4 +40,4 @@ def extract_marksheet_details(image_path: str) -> str:
         "Name": name,
         "CGPA": cgpa
     }
-    return json.dumps(result, indent=4)
+    return result
