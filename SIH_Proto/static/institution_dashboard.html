@@ -15,15 +15,10 @@ body {
   font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
   letter-spacing: 0.02em;
 }
-nav {
-  background: #fff !important;
-  box-shadow: 0 4px 18px 0 rgba(31,38,135,0.10);
-  border-radius: 0 0 18px 18px;
-  margin-bottom: 32px;
-}
+
 #institutionName {
   font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
-  color: #185a9d;
+  color: #F6F9FC;
   letter-spacing: 0.04em;
 }
 #userName {
@@ -92,7 +87,7 @@ input:focus, select:focus {
   background: #fff !important;
 }
 button, .bg-emerald-600 {
-  background: #357AD4 !important;
+  background: #232b5d !important;
   color: #fff !important;
   font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
   font-weight: 700;
@@ -148,7 +143,7 @@ input[type="file"]:focus {
 }
 </style></head>
 <body>
-<nav class="bg-white shadow p-8 flex justify-between items-center">
+<nav class="bg-blue-950 shadow p-8 flex justify-between items-center">
     <div>
         <h1 class="text-xl font-bold text-gray" id="institutionName">Institution Portal</h1>
     </div>
@@ -163,7 +158,7 @@ input[type="file"]:focus {
 
     <div class="bg-white p-6 rounded-lg shadow">
         <div class="border-b border-gray-200 mb-4">
-            <nav class="flex space-x-4" aria-label="Tabs">
+            <nav class="bg-white flex space-x-4" aria-label="Tabs">
                 <button onclick="switchTab('single-upload')" class="tab active px-3 py-2 font-medium text-sm rounded-t-lg">Single Upload</button>
                 <button onclick="switchTab('bulk-upload')" class="tab px-3 py-2 font-medium text-sm rounded-t-lg">Bulk Upload</button>
                 <button onclick="switchTab('view-certs')" class="tab px-3 py-2 font-medium text-sm rounded-t-lg">View Certificates</button>
